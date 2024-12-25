@@ -80,10 +80,10 @@ int main(int argc, char** argv) {
   Loss* loss = new CrossEntropy;
   dnn.add_loss(loss);
   // train & test
-  SGD opt(0.0004, 5e-4, 0.9, true);
+  SGD opt(0.0002, 5e-4, 0.9, true);
   // SGD opt(0.001);
   const int n_epoch = 1;
-  const int batch_size = 128;
+  const int batch_size = 50;
 
   if (!IS_TRAINING) {
     for (int v = config::startVersion; v <= config::endVersion; v++)
