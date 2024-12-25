@@ -10,6 +10,7 @@ void FullyConnected::init() {
   set_normal_random(weight.data(), weight.size(), 0, 0.005);
   set_normal_random(bias.data(), bias.size(), 0, 0.005);
 }
+const float max_gradient_norm = 1.0f;
 
 Matrix HostMatrixMultiplication(const Matrix& A, const Matrix& B) {
   // Kiểm tra kích thước hợp lệ
@@ -167,6 +168,9 @@ void FullyConnected::backwardVersion_1(const Matrix& bottom, const Matrix& grad_
 
   // Tính grad_bias = \sum{ d(L)/d(z_i) }
   grad_bias = grad_top.rowwise().sum();
+
+  grad_weight = grad_weight.cwiseMin(max_gradient_norm).cwiseMax(-max_gradient_norm);
+  grad_bias = grad_bias.cwiseMin(max_gradient_norm).cwiseMax(-max_gradient_norm);
 
   // Tính grad_bottom = weight * grad_top sử dụng HostMatrixMultiplication
   grad_bottom = HostMatrixMultiplication(weight, grad_top);
