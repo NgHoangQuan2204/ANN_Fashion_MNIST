@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cuda_fp16.h>
 #include "cuda_utilities.h"
 #include "../../config.h"
 
@@ -193,46 +194,16 @@ __global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, 
     }
 }
 
-// Kernel Strassen để nhân ma trận 2x2
-__global__ void matrixMultiplicationKernel_4(float* A, float* B, float* result, int m, int n, int k) {
+__global__ void matrixMultiplicationKernel_4(const half* A, const half* B, half* result, int m, int n, int k) {
     int row = threadIdx.y + blockIdx.y * blockDim.y;
     int col = threadIdx.x + blockIdx.x * blockDim.x;
 
-    if (row < n && col < n) {
-        // Chia ma trận A và B thành 4 ma trận con (A11, A12, A21, A22, B11, B12, B21, B22)
-        int halfN = n / 2;
-        float A11 = A[row * n + col];
-        float A12 = A[row * n + col + halfN];
-        float A21 = A[(row + halfN) * n + col];
-        float A22 = A[(row + halfN) * n + col + halfN];
-
-        float B11 = B[row * n + col];
-        float B12 = B[row * n + col + halfN];
-        float B21 = B[(row + halfN) * n + col];
-        float B22 = B[(row + halfN) * n + col + halfN];
-
-        // Tính các ma trận trung gian P1 đến P7
-        float P1 = (A11 + A22) * (B11 + B22);
-        float P2 = (A21 + A22) * B11;
-        float P3 = A11 * (B12 - B22);
-        float P4 = A22 * (B21 - B11);
-        float P5 = (A11 + A12) * B22;
-        float P6 = (A21 - A11) * (B11 + B12);
-        float P7 = (A12 - A22) * (B21 + B22);
-
-        // Tính các phần tử ma trận result từ các ma trận M1 đến M7
-        float C11 = P1 + P4 - P5 + P7;
-        float C12 = P3 + P5;
-        float C21 = P2 + P4;
-        float C22 = P1 + P3 - P2 + P6;
-
-        // Ghi kết quả vào ma trận result
-        if (row < n / 2 && col < n / 2) {
-            result[row * n + col] = C11;
-            result[row * n + col + halfN] = C12;
-            result[(row + halfN) * n + col] = C21;
-            result[(row + halfN) * n + col + halfN] = C22;
+    if (row < m && col < k) {
+        half value = __float2half(0.0f);  // Khởi tạo giá trị FP16
+        for (int i = 0; i < n; i++) {
+            value = __hadd(value, __hmul(A[row * n + i], B[i * k + col])); // Cộng và nhân FP16
         }
+        result[row * k + col] = value;
     }
 }
 
