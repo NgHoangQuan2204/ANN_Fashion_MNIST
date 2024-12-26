@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
   for (int v = config::startVersion; v <= config::endVersion; v++)
   {
     config::currentVersion = v;
-    std::cout << "\nCurrent version: " << config::currentVersion << "\n";
+    std::cout << "\nCurrent version: " << config::currentVersion << "\n\n";
     startTimer();
     for (int epoch = 0; epoch < n_epoch; epoch ++) 
     {

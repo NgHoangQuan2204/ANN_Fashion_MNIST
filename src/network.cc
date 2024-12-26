@@ -1,11 +1,15 @@
 #include "./network.h"
 #include "./layer/dense.h"
+#include "./layer/cuda_utilities.h"
+
 void Network::forward(const Matrix& input) {
   if (layers.empty())
     return;
   layers[0]->forward(input);
   for (int i = 1; i < layers.size(); i++) {
+    startTimer();
     layers[i]->forward(layers[i-1]->output());
+    std::cout << "Layer " << i+1 << " forward time: " << stopTimer() << std::endl;
   }
 }
 
@@ -17,14 +21,18 @@ void Network::backward(const Matrix& input, const Matrix& target) {
   // 1 layer
   loss->evaluate(layers[n_layer-1]->output(), target);
   if (n_layer == 1) {
+    startTimer();
     layers[0]->backward(input, loss->back_gradient());
+    std::cout << "Layer 1 backward time: " << stopTimer() << std::endl;
     return;
   }
   // >1 layers
   layers[n_layer-1]->backward(layers[n_layer-2]->output(),
                               loss->back_gradient());
   for (int i = n_layer-2; i > 0; i--) {
+    startTimer();
     layers[i]->backward(layers[i-1]->output(), layers[i+1]->back_gradient());
+    std::cout << "Layer " << i+1 << " backward time: " << stopTimer() << std::endl;
   }
   layers[0]->backward(input, layers[1]->back_gradient());
 }

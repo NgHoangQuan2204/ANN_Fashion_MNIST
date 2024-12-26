@@ -159,18 +159,6 @@ void Dense::backward(const Matrix& bottom, const Matrix& grad_top) {
   }
 }
 
-// Library Version
-// void Dense::backwardVersion_1(const Matrix& bottom, const Matrix& grad_top) {
-//   const int n_sample = bottom.cols();
-//   // d(L)/d(w') = d(L)/d(z) * x'
-//   // d(L)/d(b) = \sum{ d(L)/d(z_i) }
-//   grad_weight = bottom * grad_top.transpose();
-//   grad_bias = grad_top.rowwise().sum();
-//   // d(L)/d(x) = w * d(L)/d(z)
-//   grad_bottom.resize(dim_in, n_sample);
-//   grad_bottom = weight * grad_top;
-// }
-
 // Sequential Version
 void Dense::backwardVersion_1(const Matrix& bottom, const Matrix& grad_top) {
   const int n_sample = bottom.cols();
