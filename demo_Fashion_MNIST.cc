@@ -4,7 +4,7 @@
 #include <fstream>
 
 #include "src/layer.h"
-#include "src/layer/fully_connected.h"
+#include "src/layer/dense.h"
 #include "src/layer/relu.h"
 #include "src/layer/softmax.h"
 #include "src/loss.h"
@@ -62,9 +62,9 @@ int main(int argc, char** argv) {
   
   // dnn
   Network dnn;
-  Layer* fc1 = new FullyConnected(784, 128);
-  Layer* fc2 = new FullyConnected(128, 128);
-  Layer* fc3 = new FullyConnected(128, 10);
+  Layer* fc1 = new Dense(784, 128);
+  Layer* fc2 = new Dense(128, 128);
+  Layer* fc3 = new Dense(128, 10);
   Layer* relu1 = new ReLU;
   Layer* relu2 = new ReLU;
   Layer* softmax = new Softmax;

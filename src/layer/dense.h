@@ -4,7 +4,7 @@
 #include <vector>
 #include "../layer.h"
 
-class FullyConnected : public Layer {
+class Dense : public Layer {
  private:
   const int dim_in;
   const int dim_out;
@@ -17,7 +17,7 @@ class FullyConnected : public Layer {
   void init();
 
  public:
-  FullyConnected(const int dim_in, const int dim_out) :
+  Dense(const int dim_in, const int dim_out) :
                  dim_in(dim_in), dim_out(dim_out)
   { init(); }
 

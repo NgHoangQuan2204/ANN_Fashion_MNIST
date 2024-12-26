@@ -1,5 +1,5 @@
 #include "./network.h"
-#include "./layer/fully_connected.h"
+#include "./layer/dense.h"
 void Network::forward(const Matrix& input) {
   if (layers.empty())
     return;
@@ -113,11 +113,11 @@ void Network::check_gradient(const Matrix& input, const Matrix& target,
 
 Matrix Network::get_weight_from_network(){
   for (Layer* layer : layers) {  // Duyệt qua các layer
-        // Kiểm tra nếu lớp hiện tại là FullyConnected
-        FullyConnected* fc_layer = dynamic_cast<FullyConnected*>(layer);
+        // Kiểm tra nếu lớp hiện tại là Dense
+        Dense* fc_layer = dynamic_cast<Dense*>(layer);
         if (fc_layer) {
-            return fc_layer->get_weight();  // Lấy trọng số từ layer FullyConnected đầu tiên
+            return fc_layer->get_weight();  // Lấy trọng số từ layer Dense đầu tiên
         }
     }
-    throw std::runtime_error("No FullyConnected layer found in the network.");
+    throw std::runtime_error("No Dense layer found in the network.");
 }

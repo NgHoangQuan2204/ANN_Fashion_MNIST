@@ -1,8 +1,8 @@
-#include "./fully_connected.h"
+#include "./dense.h"
 #include "../../config.h"
 #include "cuda_utilities.h"
 
-void FullyConnected::init() {
+void Dense::init() {
   weight.resize(dim_in, dim_out);
   bias.resize(dim_out);
   grad_weight.resize(dim_in, dim_out);
@@ -34,28 +34,28 @@ Matrix HostMatrixMultiplication(const Matrix& A, const Matrix& B) {
   return result; // Trả về kết quả
 }
 
-void FullyConnected::forward(const Matrix& bottom) {
+void Dense::forward(const Matrix& bottom) {
   // z = w' * x + b
   switch (config::currentVersion)
   {
   case 1:
-    FullyConnected::forwardVersion_1(bottom);
+    Dense::forwardVersion_1(bottom);
     break;
   case 2:
-    FullyConnected::forwardVersion_2(bottom);
+    Dense::forwardVersion_2(bottom);
     break;
   case 3:
-    FullyConnected::forwardVersion_3(bottom);
+    Dense::forwardVersion_3(bottom);
     break;
   
   default:
-    FullyConnected::forwardVersion_1(bottom);
+    Dense::forwardVersion_1(bottom);
     break;
   }
 }
 
 // Sequential Version
-void FullyConnected::forwardVersion_1(const Matrix& bottom){
+void Dense::forwardVersion_1(const Matrix& bottom){
   // z = w' * x + b
   const int n_sample = bottom.cols();
   top.resize(dim_out, n_sample);
@@ -70,8 +70,8 @@ void FullyConnected::forwardVersion_1(const Matrix& bottom){
 }
 
 // Parallel Version (Not optimized)
-void FullyConnected::forwardVersion_2(const Matrix& bottom){
-  // std::cout << "đã vào FullyConnected::forwardVersion_2\n";
+void Dense::forwardVersion_2(const Matrix& bottom){
+  // std::cout << "đã vào Dense::forwardVersion_2\n";
   const int n_sample = bottom.cols(); // Số lượng mẫu
   top.resize(dim_out, n_sample);      // Kết quả đầu ra: kích thước (dim_out x n_sample)
 
@@ -105,8 +105,8 @@ void FullyConnected::forwardVersion_2(const Matrix& bottom){
 }
 
 // Parallel Version (optimized)
-void FullyConnected::forwardVersion_3(const Matrix& bottom){
-  // std::cout << "đã vào FullyConnected::forwardVersion_2\n";
+void Dense::forwardVersion_3(const Matrix& bottom){
+  // std::cout << "đã vào Dense::forwardVersion_2\n";
   const int n_sample = bottom.cols(); // Số lượng mẫu
   top.resize(dim_out, n_sample);      // Kết quả đầu ra: kích thước (dim_out x n_sample)
 
@@ -129,7 +129,7 @@ void FullyConnected::forwardVersion_3(const Matrix& bottom){
     // Cộng bias vào kết quả GPU
     Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_C + i * dim_out, dim_out, 1).colwise() += bias;
   }
-
+  
   // Chuyển kết quả từ GPU về Eigen Matrix
   Matrix result = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_C, dim_out, n_sample);
   top = result;
@@ -139,28 +139,28 @@ void FullyConnected::forwardVersion_3(const Matrix& bottom){
   free(h_C);
 }
 
-void FullyConnected::backward(const Matrix& bottom, const Matrix& grad_top) {
-  // FullyConnected::backwardVersion_0(bottom, grad_top);
+void Dense::backward(const Matrix& bottom, const Matrix& grad_top) {
+  // Dense::backwardVersion_0(bottom, grad_top);
   switch (config::currentVersion)
   {
   case 1:
-    FullyConnected::backwardVersion_1(bottom, grad_top);
+    Dense::backwardVersion_1(bottom, grad_top);
     break;
   case 2:
-    FullyConnected::backwardVersion_2(bottom, grad_top);
+    Dense::backwardVersion_2(bottom, grad_top);
     break;
   case 3:
-    FullyConnected::backwardVersion_3(bottom, grad_top);
+    Dense::backwardVersion_3(bottom, grad_top);
     break;
   
   default:
-    FullyConnected::backwardVersion_1(bottom, grad_top);
+    Dense::backwardVersion_1(bottom, grad_top);
     break;
   }
 }
 
 // Library Version
-void FullyConnected::backwardVersion_1(const Matrix& bottom, const Matrix& grad_top) {
+void Dense::backwardVersion_1(const Matrix& bottom, const Matrix& grad_top) {
   const int n_sample = bottom.cols();
   // d(L)/d(w') = d(L)/d(z) * x'
   // d(L)/d(b) = \sum{ d(L)/d(z_i) }
@@ -172,7 +172,7 @@ void FullyConnected::backwardVersion_1(const Matrix& bottom, const Matrix& grad_
 }
 
 // // Sequential Version
-// void FullyConnected::backwardVersion_1(const Matrix& bottom, const Matrix& grad_top) {
+// void Dense::backwardVersion_1(const Matrix& bottom, const Matrix& grad_top) {
 //   const int n_sample = bottom.cols();
 
 //   // Tính grad_weight = bottom * grad_top.transpose() sử dụng HostMatrixMultiplication
@@ -189,7 +189,7 @@ void FullyConnected::backwardVersion_1(const Matrix& bottom, const Matrix& grad_
 // }
 
 // Parallel Version (Not optimized)
-void FullyConnected::backwardVersion_2(const Matrix& bottom, const Matrix& grad_top) {
+void Dense::backwardVersion_2(const Matrix& bottom, const Matrix& grad_top) {
     const int n_sample = bottom.cols();
 
     // Chuẩn bị bộ nhớ
@@ -232,7 +232,7 @@ void FullyConnected::backwardVersion_2(const Matrix& bottom, const Matrix& grad_
 
 
 // Parallel Version (optimized)
-void FullyConnected::backwardVersion_3(const Matrix& bottom, const Matrix& grad_top) {
+void Dense::backwardVersion_3(const Matrix& bottom, const Matrix& grad_top) {
   const int n_sample = bottom.cols();
 
   // Chuẩn bị bộ nhớ
@@ -280,7 +280,7 @@ void FullyConnected::backwardVersion_3(const Matrix& bottom, const Matrix& grad_
 
 }
 
-void FullyConnected::update(Optimizer& opt) {
+void Dense::update(Optimizer& opt) {
   Vector::AlignedMapType weight_vec(weight.data(), weight.size());
   Vector::AlignedMapType bias_vec(bias.data(), bias.size());
 
@@ -291,7 +291,7 @@ void FullyConnected::update(Optimizer& opt) {
   opt.update(bias_vec, grad_bias_vec);
 }
 
-std::vector<float> FullyConnected::get_parameters() const {
+std::vector<float> Dense::get_parameters() const {
   std::vector<float> res(weight.size() + bias.size());
   // Copy the data of weights and bias to a long vector
   std::copy(weight.data(), weight.data() + weight.size(), res.begin());
@@ -300,14 +300,14 @@ std::vector<float> FullyConnected::get_parameters() const {
   return res;
 }
 
-void FullyConnected::set_parameters(const std::vector<float>& param) {
+void Dense::set_parameters(const std::vector<float>& param) {
   if (static_cast<int>(param.size()) != weight.size() + bias.size())
       throw std::invalid_argument("Parameter size does not match");
   std::copy(param.begin(), param.begin() + weight.size(), weight.data());
   std::copy(param.begin() + weight.size(), param.end(), bias.data());
 }
 
-std::vector<float> FullyConnected::get_derivatives() const {
+std::vector<float> Dense::get_derivatives() const {
   std::vector<float> res(grad_weight.size() + grad_bias.size());
   // Copy the data of weights and bias to a long vector
   std::copy(grad_weight.data(), grad_weight.data() + grad_weight.size(),
