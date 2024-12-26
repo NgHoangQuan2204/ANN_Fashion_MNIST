@@ -69,13 +69,12 @@ void Dense::forwardVersion_1(const Matrix& bottom){
 
 // Parallel Version (Not optimized)
 void Dense::forwardVersion_2(const Matrix& bottom){
-  // std::cout << "đã vào Dense::forwardVersion_2\n";
   const int n_sample = bottom.cols(); // Số lượng mẫu
   top.resize(dim_out, n_sample);      // Kết quả đầu ra: kích thước (dim_out x n_sample)
 
   // 1. Chuẩn bị dữ liệu trên CPU và GPU
   float* h_bottom = (float*)malloc(dim_in * n_sample * sizeof(float)); // Dữ liệu đầu vào (bottom)
-  float* h_C = (float*)calloc(dim_out * n_sample, sizeof(float));      // Ma trận kết quả
+  float* h_result = (float*)calloc(dim_out * n_sample, sizeof(float));      // Ma trận kết quả
 
   for (int i = 0; i < n_sample; i++) {
     // Trích xuất cột của bottom
@@ -86,31 +85,30 @@ void Dense::forwardVersion_2(const Matrix& bottom){
     std::memcpy(h_bottom + i * dim_in, columnMatrix.data(), dim_in * sizeof(float));
 
     // Thực hiện phép nhân ma trận trên GPU
-    matrixMultiplicationGPUWrapper(weight.transpose().data(), h_bottom + i * dim_in, h_C + i * dim_out,
+    matrixMultiplicationGPUWrapper(weight.transpose().data(), h_bottom + i * dim_in, h_result + i * dim_out,
                                    dim_out, dim_in, 1, i, false);
 
     // Cộng bias vào kết quả GPU
-    Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_C + i * dim_out, dim_out, 1).colwise() += bias;
+    Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_result + i * dim_out, dim_out, 1).colwise() += bias;
   }
 
   // Chuyển kết quả từ GPU về Eigen Matrix
-  Matrix result = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_C, dim_out, n_sample);
+  Matrix result = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_result, dim_out, n_sample);
   top = result;
 
   // Giải phóng bộ nhớ
   free(h_bottom);
-  free(h_C);
+  free(h_result);
 }
 
 // Parallel Version (optimized)
 void Dense::forwardVersion_3(const Matrix& bottom){
-  // std::cout << "đã vào Dense::forwardVersion_2\n";
   const int n_sample = bottom.cols(); // Số lượng mẫu
   top.resize(dim_out, n_sample);      // Kết quả đầu ra: kích thước (dim_out x n_sample)
 
   // 1. Chuẩn bị dữ liệu trên CPU và GPU
   float* h_bottom = (float*)malloc(dim_in * n_sample * sizeof(float)); // Dữ liệu đầu vào (bottom)
-  float* h_C = (float*)calloc(dim_out * n_sample, sizeof(float));      // Ma trận kết quả
+  float* h_result = (float*)calloc(dim_out * n_sample, sizeof(float));      // Ma trận kết quả
 
   for (int i = 0; i < n_sample; i++) {
     // Trích xuất cột của bottom
@@ -121,24 +119,24 @@ void Dense::forwardVersion_3(const Matrix& bottom){
     std::memcpy(h_bottom + i * dim_in, columnMatrix.data(), dim_in * sizeof(float));
 
     // Thực hiện phép nhân ma trận trên GPU
-    matrixMultiplicationGPUWrapper(weight.transpose().data(), h_bottom + i * dim_in, h_C + i * dim_out,
+    matrixMultiplicationGPUWrapper(weight.transpose().data(), h_bottom + i * dim_in, h_result + i * dim_out,
                                    dim_out, dim_in, 1, i, true);
 
     // Cộng bias vào kết quả GPU
-    Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_C + i * dim_out, dim_out, 1).colwise() += bias;
+    Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_result + i * dim_out, dim_out, 1).colwise() += bias;
   }
   
   // Chuyển kết quả từ GPU về Eigen Matrix
-  Matrix result = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_C, dim_out, n_sample);
+  Matrix result = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_result, dim_out, n_sample);
   top = result;
 
   // Giải phóng bộ nhớ
   free(h_bottom);
-  free(h_C);
+  free(h_result);
 }
 
 void Dense::backward(const Matrix& bottom, const Matrix& grad_top) {
-  // Dense::backwardVersion_0(bottom, grad_top);
+
   switch (config::currentVersion)
   {
   case 1:
@@ -246,13 +244,6 @@ void Dense::backwardVersion_3(const Matrix& bottom, const Matrix& grad_top) {
 
   // Chuyển kết quả từ GPU về Eigen Matrix
   grad_bottom = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_grad_bottom, dim_in, n_sample);
-
-  // // Tính toán grad_bottom tuần tự để so sánh
-  // Matrix grad_bottom_sequential = weight * grad_top;
-
-  // // So sánh kết quả giữa GPU và CPU
-  // float error = (grad_bottom - grad_bottom_sequential).norm();
-  // std::cout << "Bottom Error: " << error << std::endl;
 
   // Giải phóng bộ nhớ
   free(h_bottom);

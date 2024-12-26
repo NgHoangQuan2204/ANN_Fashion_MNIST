@@ -76,7 +76,7 @@ __host__ __device__ int idx1D_col(int r, int c, int rowSz) // Create two verisio
     return c * rowSz + r;
 }
 
-__global__ void matrixMultiplicationKernel_1(float* A, float* B, float* C, int m, int n, int k, int image)
+__global__ void matrixMultiplicationKernel_Unoptimized(float* A, float* B, float* result, int m, int n, int k, int image)
 {
     // Xác định chỉ số hàng và cột trong ma trận kết quả
     int row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -92,11 +92,11 @@ __global__ void matrixMultiplicationKernel_1(float* A, float* B, float* C, int m
         }
 
         // Ghi kết quả vào ma trận C
-        C[row * k + col] = val;
+        result[row * k + col] = val;
     }
 }
 
-__global__ void matrixMultiplicationKernel_2(float* A, float* B, float* C, int m, int n, int k, int image)
+__global__ void matrixMultiplicationKernel_Optimized(float* A, float* B, float* result, int m, int n, int k, int image)
 {
     __shared__ float tile_A[TILE_WIDTH][TILE_WIDTH];
     __shared__ float tile_B[TILE_WIDTH][TILE_WIDTH];
@@ -136,11 +136,11 @@ __global__ void matrixMultiplicationKernel_2(float* A, float* B, float* C, int m
 
     // Ghi giá trị tính được vào ma trận kết quả C
     if (row < m && col < k) {
-        C[row * k + col] = val;
+        result[row * k + col] = val;
     }
 }
 
-void matrixMultiplicationGPUWrapper(float* A, float *B, float *C, int m, int n, int k, int i, bool isOptimized)
+void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, int n, int k, int i, bool isOptimized)
 {	
     // Kích thước block và grid
     dim3 blockSize(32, 32);
@@ -149,13 +149,13 @@ void matrixMultiplicationGPUWrapper(float* A, float *B, float *C, int m, int n, 
     // Kích thước bộ nhớ
     const int size_A = m * n * sizeof(float);
     const int size_B = n * k * sizeof(float);
-    const int size_C = m * k * sizeof(float);
+    const int size_result = m * k * sizeof(float);
 
     // Cấp phát bộ nhớ trên GPU
-    float *d_A, *d_B, *d_C;
+    float *d_A, *d_B, *d_result;
     CHECK(cudaMalloc(&d_A, size_A));
     CHECK(cudaMalloc(&d_B, size_B));
-    CHECK(cudaMalloc(&d_C, size_C));
+    CHECK(cudaMalloc(&d_result, size_result));
 
     // Copy dữ liệu từ CPU sang GPU
     CHECK(cudaMemcpy(d_A, A, size_A, cudaMemcpyHostToDevice));
@@ -163,9 +163,9 @@ void matrixMultiplicationGPUWrapper(float* A, float *B, float *C, int m, int n, 
 
     // Gọi kernel
     if (isOptimized == false) {
-        matrixMultiplicationKernel_1<<<gridSize, blockSize>>>(d_A, d_B, d_C, m, n, k, i);
+        matrixMultiplicationKernel_Unoptimized<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
     } else {
-        matrixMultiplicationKernel_2<<<gridSize, blockSize>>>(d_A, d_B, d_C, m, n, k, i);
+        matrixMultiplicationKernel_Optimized<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
     }
     CHECK(cudaGetLastError());
     
@@ -173,10 +173,10 @@ void matrixMultiplicationGPUWrapper(float* A, float *B, float *C, int m, int n, 
     CHECK(cudaDeviceSynchronize());
 
     // Copy kết quả từ GPU sang CPU
-    CHECK(cudaMemcpy(C, d_C, size_C, cudaMemcpyDeviceToHost));
+    CHECK(cudaMemcpy(result, d_result, size_result, cudaMemcpyDeviceToHost));
 
     // Giải phóng bộ nhớ GPU
     CHECK(cudaFree(d_A));
     CHECK(cudaFree(d_B));
-    CHECK(cudaFree(d_C));
+    CHECK(cudaFree(d_result));
 }
