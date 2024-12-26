@@ -9,7 +9,6 @@
 #include "src/layer/relu.h"
 #include "src/layer/softmax.h"
 #include "src/loss.h"
-#include "src/loss/mse_loss.h"
 #include "src/loss/cross_entropy_loss.h"
 #include "src/mnist.h"
 #include "src/network.h"
