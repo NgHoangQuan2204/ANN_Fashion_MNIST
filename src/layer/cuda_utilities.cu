@@ -194,16 +194,23 @@ __global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, 
     }
 }
 
-__global__ void matrixMultiplicationKernel_4(const half* A, const half* B, half* result, int m, int n, int k) {
-    int row = threadIdx.y + blockIdx.y * blockDim.y;
-    int col = threadIdx.x + blockIdx.x * blockDim.x;
+__global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, int m, int n, int k) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
 
+    // Kiểm tra điều kiện biên để tránh truy cập ngoài phạm vi
     if (row < m && col < k) {
         half value = __float2half(0.0f);  // Khởi tạo giá trị FP16
+        
+        // Tính tích vô hướng của hàng A và cột B (chuyển A, B thành FP16 và tính toán)
         for (int i = 0; i < n; i++) {
-            value = __hadd(value, __hmul(A[row * n + i], B[i * k + col])); // Cộng và nhân FP16
+            half a = __float2half(A[row * n + i]);  // Chuyển từ float sang half
+            half b = __float2half(B[i * k + col]);  // Chuyển từ float sang half
+            value = __hadd(value, __hmul(a, b));  // Nhân và cộng FP16
         }
-        result[row * k + col] = value;
+
+        // Lưu kết quả vào ma trận kết quả (chuyển từ FP16 về float)
+        result[row * k + col] = __half2float(value);
     }
 }
 
