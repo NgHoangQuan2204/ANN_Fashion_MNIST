@@ -160,33 +160,30 @@ void Dense::backward(const Matrix& bottom, const Matrix& grad_top) {
 }
 
 // Library Version
-void Dense::backwardVersion_1(const Matrix& bottom, const Matrix& grad_top) {
-  const int n_sample = bottom.cols();
-  // d(L)/d(w') = d(L)/d(z) * x'
-  // d(L)/d(b) = \sum{ d(L)/d(z_i) }
-  grad_weight = bottom * grad_top.transpose();
-  grad_bias = grad_top.rowwise().sum();
-  // d(L)/d(x) = w * d(L)/d(z)
-  grad_bottom.resize(dim_in, n_sample);
-  grad_bottom = weight * grad_top;
-}
-
-// // Sequential Version
 // void Dense::backwardVersion_1(const Matrix& bottom, const Matrix& grad_top) {
 //   const int n_sample = bottom.cols();
-
-//   // Tính grad_weight = bottom * grad_top.transpose() sử dụng HostMatrixMultiplication
-//   grad_weight = HostMatrixMultiplication(bottom, grad_top.transpose());
-
-//   // Tính grad_bias = \sum{ d(L)/d(z_i) }
+//   // d(L)/d(w') = d(L)/d(z) * x'
+//   // d(L)/d(b) = \sum{ d(L)/d(z_i) }
+//   grad_weight = bottom * grad_top.transpose();
 //   grad_bias = grad_top.rowwise().sum();
-
-//   grad_weight = grad_weight.cwiseMin(max_gradient_norm).cwiseMax(-max_gradient_norm);
-//   grad_bias = grad_bias.cwiseMin(max_gradient_norm).cwiseMax(-max_gradient_norm);
-
-//   // Tính grad_bottom = weight * grad_top sử dụng HostMatrixMultiplication
-//   grad_bottom = HostMatrixMultiplication(weight, grad_top);
+//   // d(L)/d(x) = w * d(L)/d(z)
+//   grad_bottom.resize(dim_in, n_sample);
+//   grad_bottom = weight * grad_top;
 // }
+
+// Sequential Version
+void Dense::backwardVersion_1(const Matrix& bottom, const Matrix& grad_top) {
+  const int n_sample = bottom.cols();
+
+  // Tính grad_weight = bottom * grad_top.transpose() sử dụng HostMatrixMultiplication
+  grad_weight = bottom * grad_top.transpose();
+
+  // Tính grad_bias = \sum{ d(L)/d(z_i) }
+  grad_bias = grad_top.rowwise().sum();
+
+  // Tính grad_bottom = weight * grad_top sử dụng HostMatrixMultiplication
+  grad_bottom = HostMatrixMultiplication(weight, grad_top);
+}
 
 // Parallel Version (Not optimized)
 void Dense::backwardVersion_2(const Matrix& bottom, const Matrix& grad_top) {
