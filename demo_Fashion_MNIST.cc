@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
   Loss* loss = new CrossEntropy;
   ann.add_loss(loss);
   // train & test
-  SGD opt(0.0004, 5e-4, 0.9, true);
+  SGD opt(0.0006, 5e-4, 0.9, true);
   // SGD opt(0.001);
   const int n_epoch = 3;
   const int batch_size = 100;
