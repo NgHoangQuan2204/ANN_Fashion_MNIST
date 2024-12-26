@@ -194,7 +194,7 @@ __global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, 
     }
 }
 
-__global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, int m, int n, int k) {
+__global__ void matrixMultiplicationKernel_4(float* A, float* B, float* result, int m, int n, int k) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
