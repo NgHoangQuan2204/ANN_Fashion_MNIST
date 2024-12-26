@@ -143,7 +143,7 @@ __global__ void matrixMultiplicationKernel_2(float* A, float* B, float* result, 
 
 #define UNROLL_FACTOR 4
 __global__ void matrixMultiplicationKernel_3(float* restrict A, float* restrict B, float* restrict result,
-                                                     int m, int n, int k) {
+                                                     int m, int n, int k, int image) {
     // Shared memory tiles cho ma trận A và B
     __shared__ float tile_A[TILE_WIDTH][TILE_WIDTH];
     __shared__ float tile_B[TILE_WIDTH][TILE_WIDTH];
