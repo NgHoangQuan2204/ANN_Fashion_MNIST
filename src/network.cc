@@ -3,45 +3,45 @@
 #include "./layer/cuda_utilities.h"
 
 void Network::forward(const Matrix& input) {
-    if (layers.empty())
-        return;
-    layers[0]->forward(input);
-    if (forward_times.empty()) {
-        forward_times.resize(layers.size(), 0.0f);
-    }
-    forward_count++;
-    for (int i = 1; i < layers.size(); i++) {
-        startTimer();
-        layers[i]->forward(layers[i-1]->output());
-        float elapsed = stopTimer();
-        forward_times[i] += elapsed;
-    }
+  if (layers.empty())
+    return;
+  layers[0]->forward(input);
+  if (forward_times.empty()) {
+    forward_times.resize(layers.size(), 0.0f);
+  }
+  forward_count++;
+  for (int i = 1; i < layers.size(); i++) {
+    startTimer();
+    layers[i]->forward(layers[i-1]->output());
+    float elapsed = stopTimer();
+    forward_times[i] += elapsed;
+  }
 }
 
 void Network::backward(const Matrix& input, const Matrix& target) {
-    int n_layer = layers.size();
-    if (n_layer <= 0)
-        return;
-    loss->evaluate(layers[n_layer-1]->output(), target);
-    if (backward_times.empty()) {
-        backward_times.resize(layers.size(), 0.0f);
-    }
-    backward_count++;
-    if (n_layer == 1) {
-        startTimer();
-        layers[0]->backward(input, loss->back_gradient());
-        float elapsed = stopTimer();
-        backward_times[0] += elapsed;
-        return;
-    }
-    layers[n_layer-1]->backward(layers[n_layer-2]->output(), loss->back_gradient());
-    for (int i = n_layer-2; i > 0; i--) {
-        startTimer();
-        layers[i]->backward(layers[i-1]->output(), layers[i+1]->back_gradient());
-        float elapsed = stopTimer();
-        backward_times[i] += elapsed;
-    }
-    layers[0]->backward(input, layers[1]->back_gradient());
+  int n_layer = layers.size();
+  if (n_layer <= 0)
+    return;
+  loss->evaluate(layers[n_layer-1]->output(), target);
+  if (backward_times.empty()) {
+    backward_times.resize(layers.size(), 0.0f);
+  }
+  backward_count++;
+  if (n_layer == 1) {
+    startTimer();
+    layers[0]->backward(input, loss->back_gradient());
+    float elapsed = stopTimer();
+    backward_times[0] += elapsed;
+    return;
+  }
+  layers[n_layer-1]->backward(layers[n_layer-2]->output(), loss->back_gradient());
+  for (int i = n_layer-2; i > 0; i--) {
+    startTimer();
+    layers[i]->backward(layers[i-1]->output(), layers[i+1]->back_gradient());
+    float elapsed = stopTimer();
+    backward_times[i] += elapsed;
+  }
+  layers[0]->backward(input, layers[1]->back_gradient());
 }
 
 // void Network::forward(const Matrix& input) {
