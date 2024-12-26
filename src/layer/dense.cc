@@ -64,9 +64,7 @@ void Dense::forwardVersion_1(const Matrix& bottom){
   top = HostMatrixMultiplication(weight.transpose(), bottom);
 
   // Cộng bias vào mỗi cột của ma trận kết quả
-  for (int i = 0; i < top.cols(); ++i) {
-    top.col(i) += bias;
-  }
+  top.colwise() += bias;
 }
 
 // Parallel Version (Not optimized)
