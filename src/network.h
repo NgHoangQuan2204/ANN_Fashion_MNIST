@@ -12,6 +12,10 @@ class Network {
  private:
   std::vector<Layer*> layers;  // layer pointers
   Loss* loss;  // loss pointer
+  std::vector<float> forward_times;
+  std::vector<float> backward_times;
+  int forward_count = 0;
+  int backward_count = 0;
 
  public:
   Network() : loss(NULL) {}
@@ -43,6 +47,8 @@ class Network {
   void check_gradient(const Matrix& input, const Matrix& target, int n_points,
                       int seed = -1);
   Matrix get_weight_from_network();
+
+  void print_average_times() const;
 };
 
 #endif  // SRC_NETWORK_H_

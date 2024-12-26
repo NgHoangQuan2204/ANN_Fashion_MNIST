@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <chrono>
 
 #include "src/layer.h"
 #include "src/layer/dense.h"
@@ -81,24 +82,6 @@ int main(int argc, char** argv) {
   const int n_epoch = 4;
   const int batch_size = 100;
 
-  if (!IS_TRAINING) {
-    for (int v = config::startVersion; v <= config::endVersion; v++)
-    {
-      config::currentVersion = v;
-      std::cout << "\nCurrent version: " << config::currentVersion << "\n\n";
-      std::cout << "\n\n";
-
-      // Run on the test set
-      testing(dnn, dataset, 0);
-      std::cout << "------------------------------------------\n" << std::endl;
-
-      if (!config::runAllVersion)
-        break;
-    }
-
-    return 0;
-  }
-
   Matrix previous_weight = dnn.get_weight_from_network();
 
   for (int v = config::startVersion; v <= config::endVersion; v++)
@@ -106,6 +89,7 @@ int main(int argc, char** argv) {
     config::currentVersion = v;
     std::cout << "\nCurrent version: " << config::currentVersion << "\n\n";
     startTimer();
+    auto start = std::chrono::high_resolution_clock::now();
     for (int epoch = 0; epoch < n_epoch; epoch ++) 
     {
       shuffle_data(dataset.train_data, dataset.train_labels);
@@ -137,7 +121,12 @@ int main(int argc, char** argv) {
     // test
     testing(dnn, dataset, epoch);
     }
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
     std::cout << "Train time: " << stopTimer() << std::endl;
+    std::cout << "Real train time: " << duration.count() << " ms" << std::endl;
+    dnn.print_average_times();
   }
   
   return 0;

@@ -3,45 +3,87 @@
 #include "./layer/cuda_utilities.h"
 
 void Network::forward(const Matrix& input) {
-  if (layers.empty())
-    return;
-  layers[0]->forward(input);
-  for (int i = 1; i < layers.size(); i++) {
-    startTimer();
-    layers[i]->forward(layers[i-1]->output());
-    std::cout << "Layer " << i+1 << " forward time: " << stopTimer() << std::endl;
-  }
+    if (layers.empty())
+        return;
+    layers[0]->forward(input);
+    if (forward_times.empty()) {
+        forward_times.resize(layers.size(), 0.0f);
+    }
+    forward_count++;
+    for (int i = 1; i < layers.size(); i++) {
+        startTimer();
+        layers[i]->forward(layers[i-1]->output());
+        float elapsed = stopTimer();
+        forward_times[i] += elapsed;
+    }
 }
 
 void Network::backward(const Matrix& input, const Matrix& target) {
-  int n_layer = layers.size();
-  // 0 layer
-  if (n_layer <= 0)
-    return;
-  // 1 layer
-  loss->evaluate(layers[n_layer-1]->output(), target);
-  if (n_layer == 1) {
-    startTimer();
-    layers[0]->backward(input, loss->back_gradient());
-    std::cout << "Layer 1 backward time: " << stopTimer() << std::endl;
-    return;
-  }
-  // >1 layers
-  layers[n_layer-1]->backward(layers[n_layer-2]->output(),
-                              loss->back_gradient());
-  for (int i = n_layer-2; i > 0; i--) {
-    startTimer();
-    layers[i]->backward(layers[i-1]->output(), layers[i+1]->back_gradient());
-    std::cout << "Layer " << i+1 << " backward time: " << stopTimer() << std::endl;
-  }
-  layers[0]->backward(input, layers[1]->back_gradient());
+    int n_layer = layers.size();
+    if (n_layer <= 0)
+        return;
+    loss->evaluate(layers[n_layer-1]->output(), target);
+    if (backward_times.empty()) {
+        backward_times.resize(layers.size(), 0.0f);
+    }
+    backward_count++;
+    if (n_layer == 1) {
+        startTimer();
+        layers[0]->backward(input, loss->back_gradient());
+        float elapsed = stopTimer();
+        backward_times[0] += elapsed;
+        return;
+    }
+    layers[n_layer-1]->backward(layers[n_layer-2]->output(), loss->back_gradient());
+    for (int i = n_layer-2; i > 0; i--) {
+        startTimer();
+        layers[i]->backward(layers[i-1]->output(), layers[i+1]->back_gradient());
+        float elapsed = stopTimer();
+        backward_times[i] += elapsed;
+    }
+    layers[0]->backward(input, layers[1]->back_gradient());
 }
 
-void Network::update(Optimizer& opt) {
-  for (int i = 0; i < layers.size(); i++) {
-    layers[i]->update(opt);
-  }
-}
+// void Network::forward(const Matrix& input) {
+//   if (layers.empty())
+//     return;
+//   layers[0]->forward(input);
+//   for (int i = 1; i < layers.size(); i++) {
+//     startTimer();
+//     layers[i]->forward(layers[i-1]->output());
+//     std::cout << "Layer " << i << " forward time: " << stopTimer() << std::endl;
+//   }
+// }
+
+// void Network::backward(const Matrix& input, const Matrix& target) {
+//   int n_layer = layers.size();
+//   // 0 layer
+//   if (n_layer <= 0)
+//     return;
+//   // 1 layer
+//   loss->evaluate(layers[n_layer-1]->output(), target);
+//   if (n_layer == 1) {
+//     startTimer();
+//     layers[0]->backward(input, loss->back_gradient());
+//     std::cout << "Layer 1 backward time: " << stopTimer() << std::endl;
+//     return;
+//   }
+//   // >1 layers
+//   layers[n_layer-1]->backward(layers[n_layer-2]->output(),
+//                               loss->back_gradient());
+//   for (int i = n_layer-2; i > 0; i--) {
+//     startTimer();
+//     layers[i]->backward(layers[i-1]->output(), layers[i+1]->back_gradient());
+//     std::cout << "Layer " << i << " backward time: " << stopTimer() << std::endl;
+//   }
+//   layers[0]->backward(input, layers[1]->back_gradient());
+// }
+
+// void Network::update(Optimizer& opt) {
+//   for (int i = 0; i < layers.size(); i++) {
+//     layers[i]->update(opt);
+//   }
+// }
 
 std::vector<std::vector<float> > Network::get_parameters() const {
   const int n_layer = layers.size();
@@ -128,4 +170,16 @@ Matrix Network::get_weight_from_network(){
         }
     }
     throw std::runtime_error("No Dense layer found in the network.");
+}
+
+void Network::print_average_times() const {
+    std::cout << "Average forward times:" << std::endl;
+    for (int i = 0; i < forward_times.size(); i++) {
+        std::cout << "Layer " << i << ": " << (forward_times[i] / forward_count) << " ms" << std::endl;
+    }
+
+    std::cout << "Average backward times:" << std::endl;
+    for (int i = 0; i < backward_times.size(); i++) {
+        std::cout << "Layer " << i << ": " << (backward_times[i] / backward_count) << " ms" << std::endl;
+    }
 }

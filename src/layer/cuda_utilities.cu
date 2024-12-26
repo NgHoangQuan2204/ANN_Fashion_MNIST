@@ -76,7 +76,6 @@ __host__ __device__ int idx1D_col(int r, int c, int rowSz) // Create two verisio
     return c * rowSz + r;
 }
 
-
 __global__ void matrixMultiplicationKernel_1(float* A, float* B, float* C, int m, int n, int k, int image)
 {
     // Xác định chỉ số hàng và cột trong ma trận kết quả
@@ -140,23 +139,6 @@ __global__ void matrixMultiplicationKernel_2(float* A, float* B, float* C, int m
         C[row * k + col] = val;
     }
 }
-
-
-
-void matrixMultiplicationCPU(float* A, float *B, float *C, int m, int n, int k)
-{	
-	for (int r = 0; r < m; r++)
-        {
-            for (int c = 0; c < k; c++)
-            {
-                for (int i = 0; i < n; i++) 
-                {
-                    C[idx1D(r, c, k)] += A[idx1D(r, i, n)] * B[idx1D(i, c, k)];
-                }
-            }
-        }
-}
-
 
 void matrixMultiplicationGPUWrapper(float* A, float *B, float *C, int m, int n, int k, int i, bool isOptimized)
 {	

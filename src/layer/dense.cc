@@ -10,28 +10,28 @@ void Dense::init() {
   set_normal_random(weight.data(), weight.size(), 0, 0.005);
   set_normal_random(bias.data(), bias.size(), 0, 0.005);
 }
-const float max_gradient_norm = 1.0f;
 
-Matrix HostMatrixMultiplication(const Matrix& A, const Matrix& B) {
-  // Kiểm tra kích thước hợp lệ
-  if (A.cols() != B.rows()) {
-    throw std::invalid_argument("Matrix dimensions do not match");
-  }
-
-  // Khởi tạo ma trận kết quả với các giá trị 0
-  Matrix result = Matrix::Zero(A.rows(), B.cols());
-
-  // Tính toán nhân ma trận bằng vòng lặp
-  for (int i = 0; i < A.rows(); ++i) {        // Duyệt từng hàng của A
-    for (int j = 0; j < B.cols(); ++j) {    // Duyệt từng cột của B
-      float sum = 0.0f;                   // Khởi tạo tổng cho phần tử [i][j]
-      for (int k = 0; k < A.cols(); ++k) { // Tính tích vô hướng cho hàng i và cột j
-        sum += A(i, k) * B(k, j);
-      }
-      result(i, j) = sum;                 // Gán kết quả vào phần tử [i][j]
+Matrix HostMatrixMultiplication(const Matrix& A, const Matrix& B) 
+{
+    // Kiểm tra kích thước hợp lệ
+    if (A.cols() != B.rows()) {
+      throw std::invalid_argument("Matrix dimensions do not match");
     }
-  }
-  return result; // Trả về kết quả
+  
+    // Khởi tạo ma trận kết quả với các giá trị 0
+    Matrix result = Matrix::Zero(A.rows(), B.cols());
+  
+    // Tính toán nhân ma trận bằng vòng lặp
+    for (int i = 0; i < A.rows(); ++i) {        // Duyệt từng hàng của A
+      for (int j = 0; j < B.cols(); ++j) {    // Duyệt từng cột của B
+        float sum = 0.0f;                   // Khởi tạo tổng cho phần tử [i][j]
+        for (int k = 0; k < A.cols(); ++k) { // Tính tích vô hướng cho hàng i và cột j
+          sum += A(i, k) * B(k, j);
+        }
+        result(i, j) = sum;                 // Gán kết quả vào phần tử [i][j]
+      }
+    }
+    return result; // Trả về kết quả
 }
 
 void Dense::forward(const Matrix& bottom) {
@@ -213,8 +213,6 @@ void Dense::backwardVersion_2(const Matrix& bottom, const Matrix& grad_top) {
     free(h_grad_bottom);
 
 }
-
-
 
 // Parallel Version (optimized)
 void Dense::backwardVersion_3(const Matrix& bottom, const Matrix& grad_top) {
