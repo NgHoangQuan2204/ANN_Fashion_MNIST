@@ -141,7 +141,7 @@ __global__ void matrixMultiplicationKernel_2(float* A, float* B, float* result, 
     }
 }
 
-#define UNROLL_FACTOR 4
+#define UNROLL_FACTOR 2
 __global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, int m, int n, int k, int image) {
     // Shared memory tiles cho ma trận A và B
     __shared__ float tile_A[TILE_WIDTH][TILE_WIDTH];
@@ -190,6 +190,7 @@ __global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, 
         result[row * k + col] = val;
     }
 }
+
 void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, int n, int k, int i, int version)
 {	
     // Kích thước block và grid
