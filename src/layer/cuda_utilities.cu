@@ -76,7 +76,7 @@ __host__ __device__ int idx1D_col(int r, int c, int rowSz) // Create two verisio
     return c * rowSz + r;
 }
 
-__global__ void matrixMultiplicationKernel_Unoptimized(float* A, float* B, float* result
+__global__ void matrixMultiplicationKernel_1(float* A, float* B, float* result
                                                         , int m, int n, int k, int image)
 {
     // Xác định chỉ số hàng và cột trong ma trận kết quả
@@ -97,7 +97,7 @@ __global__ void matrixMultiplicationKernel_Unoptimized(float* A, float* B, float
     }
 }
 
-__global__ void matrixMultiplicationKernel_Optimized(float* A, float* B, float* result, int m, int n, int k, int image)
+__global__ void matrixMultiplicationKernel_2(float* A, float* B, float* result, int m, int n, int k, int image)
 {
     __shared__ float tile_A[TILE_WIDTH][TILE_WIDTH];
     __shared__ float tile_B[TILE_WIDTH][TILE_WIDTH];
@@ -126,7 +126,6 @@ __global__ void matrixMultiplicationKernel_Optimized(float* A, float* B, float* 
         // Đồng bộ hóa các thread trong block để đảm bảo mọi thread đã nạp xong dữ liệu vào shared memory
         __syncthreads();
 
-        #pragma unroll
         // Tính tích của tile_A và tile_B
         for (int j = 0; j < TILE_WIDTH; j++) {
             val += tile_A[threadIdx.y][j] * tile_B[j][threadIdx.x];
@@ -142,7 +141,58 @@ __global__ void matrixMultiplicationKernel_Optimized(float* A, float* B, float* 
     }
 }
 
-void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, int n, int k, int i, bool isOptimized)
+#define UNROLL_FACTOR 4
+__global__ void matrixMultiplicationKernel_3(float* restrict A, float* restrict B, float* restrict result,
+                                                     int m, int n, int k) {
+    // Shared memory tiles cho ma trận A và B
+    __shared__ float tile_A[TILE_WIDTH][TILE_WIDTH];
+    __shared__ float tile_B[TILE_WIDTH][TILE_WIDTH];
+
+    int row = threadIdx.y + blockIdx.y * TILE_WIDTH;
+    int col = threadIdx.x + blockIdx.x * TILE_WIDTH;
+    float val = 0.0f;
+
+
+    // Duyệt qua các "tiled blocks" để thực hiện phép nhân ma trận
+    for (int i = 0; i < (n + TILE_WIDTH - 1) / TILE_WIDTH; i++)
+    {
+        // Nạp dữ liệu từ A vào shared memory tile_A
+        if (row < m && (i * TILE_WIDTH + threadIdx.x) < n) {
+            tile_A[threadIdx.y][threadIdx.x] = A[row * n + i * TILE_WIDTH + threadIdx.x];
+        } else {
+            tile_A[threadIdx.y][threadIdx.x] = 0.0f;
+        }
+
+        // Nạp dữ liệu từ B vào shared memory tile_B
+        if (col < k && (i * TILE_WIDTH + threadIdx.y) < n) {
+            tile_B[threadIdx.y][threadIdx.x] = B[(i * TILE_WIDTH + threadIdx.y) * k + col];
+        } else {
+            tile_B[threadIdx.y][threadIdx.x] = 0.0f;
+        }
+
+        // Đồng bộ hóa các thread trong block để đảm bảo mọi thread đã nạp xong dữ liệu vào shared memory
+        __syncthreads();
+
+        // Tính toán giá trị trong tile, sử dụng unrolling
+        #pragma unroll
+        for (int i = 0; i < TILE_WIDTH; i++) {
+            // Unroll vòng lặp tính toán nhân A và B
+            #pragma unroll
+            for (int u = 0; u < UNROLL_FACTOR; ++u) {
+                val += tile_A[threadIdx.y][j] * tile_B[j][threadIdx.x] + u * (TILE_WIDTH / UNROLL_FACTOR);
+            }
+        }
+
+        // Đồng bộ hóa trước khi nạp tile tiếp theo
+        __syncthreads();
+    }
+
+    // Ghi kết quả vào ma trận đầu ra
+    if (row < m && col < k) {
+        result[row * k + col] = val;
+    }
+}
+void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, int n, int k, int i, int version)
 {	
     // Kích thước block và grid
     dim3 blockSize(32, 32);
@@ -164,10 +214,16 @@ void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, in
     CHECK(cudaMemcpy(d_B, B, size_B, cudaMemcpyHostToDevice));
 
     // Gọi kernel
-    if (isOptimized == false) {
-        matrixMultiplicationKernel_Unoptimized<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
-    } else {
-        matrixMultiplicationKernel_Optimized<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
+    switch (version) {
+        case 1: 
+            matrixMultiplicationKernel_1<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
+            break;
+        case 2:
+            matrixMultiplicationKernel_2<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
+            break;
+        case 3:
+            matrixMultiplicationKernel_3<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
+            break;
     }
     CHECK(cudaGetLastError());
     
