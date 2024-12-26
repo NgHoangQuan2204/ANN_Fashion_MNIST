@@ -43,8 +43,6 @@ void testing(Network& dnn, MNIST& dataset, int epoch) {
   std::cout << std::endl;
 }
 
-
-
 int main(int argc, char** argv) {
   config::startVersion = std::stoi(argv[1]);
   config::endVersion = std::stoi(argv[2]);
@@ -57,8 +55,6 @@ int main(int argc, char** argv) {
   int dim_in = dataset.train_data.rows();
   std::cout << "mnist train number: " << n_train << std::endl;
   std::cout << "mnist test number: " << dataset.test_labels.cols() << std::endl;
-  // file to save parameters
-  std::string filename = "../../../Model/parameters_version1.txt";
   
   // dnn
   Network dnn;
@@ -82,8 +78,8 @@ int main(int argc, char** argv) {
   // train & test
   SGD opt(0.0002, 5e-4, 0.9, true);
   // SGD opt(0.001);
-  const int n_epoch = 1;
-  const int batch_size = 64;
+  const int n_epoch = 4;
+  const int batch_size = 100;
 
   if (!IS_TRAINING) {
     for (int v = config::startVersion; v <= config::endVersion; v++)
@@ -108,6 +104,7 @@ int main(int argc, char** argv) {
   for (int v = config::startVersion; v <= config::endVersion; v++)
   {
     config::currentVersion = v;
+    std::cout << "\nCurrent version: " << config::currentVersion << "\n";
     startTimer();
     for (int epoch = 0; epoch < n_epoch; epoch ++) 
     {
@@ -130,7 +127,7 @@ int main(int argc, char** argv) {
         dnn.backward(x_batch, target_batch);
 
         // display
-        if (ith_batch % 50 == 0) {
+        if (ith_batch % 100 == 0) {
           std::cout << ith_batch << "-th batch, loss: " << dnn.get_loss() << std::endl;
         }
         
