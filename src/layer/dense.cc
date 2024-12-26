@@ -50,6 +50,9 @@ void Dense::forward(const Matrix& bottom) {
   case 4:
     Dense::forwardVersion_4(bottom);
     break;
+  case 5:
+    Dense::forwardVersion_5(bottom);
+    break;
   
   default:
     Dense::forwardVersion_1(bottom);
@@ -172,6 +175,39 @@ void Dense::forwardVersion_4(const Matrix& bottom){
   free(h_result);
 }
 
+void Dense::forwardVersion_5(const Matrix& bottom){
+  const int n_sample = bottom.cols(); // Số lượng mẫu
+  top.resize(dim_out, n_sample); 
+
+  // 1. Chuẩn bị dữ liệu trên CPU và GPU
+  float* h_bottom = (float*)malloc(dim_in * n_sample * sizeof(float)); // Dữ liệu đầu vào (bottom)
+  float* h_result = (float*)calloc(dim_out * n_sample, sizeof(float));      // Ma trận kết quả
+
+  for (int i = 0; i < n_sample; i++) {
+    // Trích xuất cột của bottom
+    float* columnData = const_cast<float*>(bottom.col(i).data());
+
+    // Chuyển đổi cột bottom sang hàng
+    Matrix columnMatrix = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(columnData, dim_in, 1);
+    std::memcpy(h_bottom + i * dim_in, columnMatrix.data(), dim_in * sizeof(float));
+
+    // Thực hiện phép nhân ma trận trên GPU
+    matrixMultiplicationGPUWrapper(weight.transpose().data(), h_bottom + i * dim_in, h_result + i * dim_out,
+                                   dim_out, dim_in, 1, i, 4);
+
+    // Cộng bias vào kết quả GPU
+    Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_result + i * dim_out, dim_out, 1).colwise() += bias;
+  }
+  
+  // Chuyển kết quả từ GPU về Eigen Matrix
+  Matrix result = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_result, dim_out, n_sample);
+  top = result;
+
+  // Giải phóng bộ nhớ
+  free(h_bottom);
+  free(h_result);
+}
+
 void Dense::backward(const Matrix& bottom, const Matrix& grad_top) {
 
   switch (config::currentVersion)
@@ -187,6 +223,9 @@ void Dense::backward(const Matrix& bottom, const Matrix& grad_top) {
     break;
   case 4:
     Dense::backwardVersion_4(bottom, grad_top);
+    break;
+  case 5:
+    Dense::backwardVersion_5(bottom, grad_top);
     break;
   
   default:
@@ -321,6 +360,47 @@ void Dense::backwardVersion_4(const Matrix& bottom, const Matrix& grad_top) {
       // Thực hiện phép nhân ma trận trên GPU
       matrixMultiplicationGPUWrapper(weight.data(), h_grad_top + i * dim_out, h_grad_bottom + i * dim_in,
                                       dim_in, dim_out, 1, i, 3);
+  }
+
+  // Chuyển kết quả từ GPU về Eigen Matrix
+  grad_bottom = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(h_grad_bottom, dim_in, n_sample);
+
+  // Giải phóng bộ nhớ
+  free(h_bottom);
+  free(h_grad_top);
+  free(h_grad_bottom);
+
+}
+
+void Dense::backwardVersion_5(const Matrix& bottom, const Matrix& grad_top) {
+  const int n_sample = bottom.cols();
+
+  // Chuẩn bị bộ nhớ
+  float* h_bottom = (float*)malloc(dim_in * n_sample * sizeof(float));
+  float* h_grad_top = (float*)malloc(dim_out * n_sample * sizeof(float));
+  float* h_grad_bottom = (float*)malloc(dim_in * n_sample * sizeof(float));
+
+  // 1. Tính grad_weight bằng code tuần tự
+  grad_weight = bottom * grad_top.transpose();
+
+  // 2. Tính grad_bias = \sum(d(L)/d(z))
+  grad_bias.resize(dim_out, 1);
+  for (int i = 0; i < dim_out; ++i) {
+      grad_bias(i, 0) = grad_top.row(i).sum();
+  }
+
+  // 3. Tính grad_bottom = weight * grad_top (sử dụng song song trên GPU)
+  for (int i = 0; i < n_sample; i++) {
+      // Trích xuất cột của grad_top
+      float* columnData = const_cast<float*>(grad_top.col(i).data());
+
+      // Chuyển đổi cột grad_top sang hàng
+      Matrix columnMatrix = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(columnData, dim_out, 1);
+      std::memcpy(h_grad_top + i * dim_out, columnMatrix.data(), dim_out * sizeof(float));
+
+      // Thực hiện phép nhân ma trận trên GPU
+      matrixMultiplicationGPUWrapper(weight.data(), h_grad_top + i * dim_out, h_grad_bottom + i * dim_in,
+                                      dim_in, dim_out, 1, i, 4);
   }
 
   // Chuyển kết quả từ GPU về Eigen Matrix

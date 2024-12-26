@@ -142,7 +142,7 @@ __global__ void matrixMultiplicationKernel_2(float* A, float* B, float* result, 
 }
 
 #define UNROLL_FACTOR 2
-__global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, int m, int n, int k, int image) {
+__global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, int m, int n, int k) {
     // Shared memory tiles cho ma trận A và B
     __shared__ float tile_A[TILE_WIDTH][TILE_WIDTH];
     __shared__ float tile_B[TILE_WIDTH][TILE_WIDTH];
@@ -174,7 +174,6 @@ __global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, 
         // Tính toán giá trị trong tile, sử dụng unrolling
         #pragma unroll
         for (int i = 0; i < TILE_WIDTH; i++) {
-            // Unroll vòng lặp tính toán nhân A và B
             #pragma unroll
             for (int u = 0; u < UNROLL_FACTOR; u++) {
                 int idx = i + u * (TILE_WIDTH / UNROLL_FACTOR); 
@@ -191,6 +190,49 @@ __global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, 
     // Ghi kết quả vào ma trận đầu ra
     if (row < m && col < k) {
         result[row * k + col] = val;
+    }
+}
+
+// Kernel Strassen để nhân ma trận 2x2
+__global__ void matrixMultiplicationKernel_4(float* A, float* B, float* result, int m, int n, int k) {
+    int row = threadIdx.y + blockIdx.y * blockDim.y;
+    int col = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (row < n && col < n) {
+        // Chia ma trận A và B thành 4 ma trận con (A11, A12, A21, A22, B11, B12, B21, B22)
+        int halfN = n / 2;
+        float A11 = A[row * n + col];
+        float A12 = A[row * n + col + halfN];
+        float A21 = A[(row + halfN) * n + col];
+        float A22 = A[(row + halfN) * n + col + halfN];
+
+        float B11 = B[row * n + col];
+        float B12 = B[row * n + col + halfN];
+        float B21 = B[(row + halfN) * n + col];
+        float B22 = B[(row + halfN) * n + col + halfN];
+
+        // Tính các ma trận trung gian P1 đến P7
+        float P1 = (A11 + A22) * (B11 + B22);
+        float P2 = (A21 + A22) * B11;
+        float P3 = A11 * (B12 - B22);
+        float P4 = A22 * (B21 - B11);
+        float P5 = (A11 + A12) * B22;
+        float P6 = (A21 - A11) * (B11 + B12);
+        float P7 = (A12 - A22) * (B21 + B22);
+
+        // Tính các phần tử ma trận result từ các ma trận M1 đến M7
+        float C11 = P1 + P4 - P5 + P7;
+        float C12 = P3 + P5;
+        float C21 = P2 + P4;
+        float C22 = P1 + P3 - P2 + P6;
+
+        // Ghi kết quả vào ma trận result
+        if (row < n / 2 && col < n / 2) {
+            result[row * n + col] = C11;
+            result[row * n + col + halfN] = C12;
+            result[(row + halfN) * n + col] = C21;
+            result[(row + halfN) * n + col + halfN] = C22;
+        }
     }
 }
 
@@ -224,7 +266,10 @@ void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, in
             matrixMultiplicationKernel_2<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
             break;
         case 3:
-            matrixMultiplicationKernel_3<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
+            matrixMultiplicationKernel_3<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k);
+            break;
+        case 4:
+            matrixMultiplicationKernel_4<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k);
             break;
     }
     CHECK(cudaGetLastError());

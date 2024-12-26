@@ -26,11 +26,13 @@ class Dense : public Layer {
   void forwardVersion_2(const Matrix& bottom); // Parallel (Not optimized)
   void forwardVersion_3(const Matrix& bottom); // Parallel (Optimized)
   void forwardVersion_4(const Matrix& bottom);
+  void forwardVersion_5(const Matrix& bottom);
   void backward(const Matrix& bottom, const Matrix& grad_top);
   void backwardVersion_1(const Matrix& bottom, const Matrix& grad_top); // Sequential
   void backwardVersion_2(const Matrix& bottom, const Matrix& grad_top); // Parallel (Not optimized)
   void backwardVersion_3(const Matrix& bottom, const Matrix& grad_top); // Parallel (Optimized)
   void backwardVersion_4(const Matrix& bottom, const Matrix& grad_top);
+  void backwardVersion_5(const Matrix& bottom, const Matrix& grad_top);
   void update(Optimizer& opt);
   int output_dim() { return dim_out; }
   std::vector<float> get_parameters() const;
