@@ -76,7 +76,8 @@ __host__ __device__ int idx1D_col(int r, int c, int rowSz) // Create two verisio
     return c * rowSz + r;
 }
 
-__global__ void matrixMultiplicationKernel_Unoptimized(float* A, float* B, float* result, int m, int n, int k, int image)
+__global__ void matrixMultiplicationKernel_Unoptimized(float* A, float* B, float* result
+                                                        , int m, int n, int k, int image)
 {
     // Xác định chỉ số hàng và cột trong ma trận kết quả
     int row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -125,6 +126,7 @@ __global__ void matrixMultiplicationKernel_Optimized(float* A, float* B, float* 
         // Đồng bộ hóa các thread trong block để đảm bảo mọi thread đã nạp xong dữ liệu vào shared memory
         __syncthreads();
 
+        #pragma unroll
         // Tính tích của tile_A và tile_B
         for (int j = 0; j < TILE_WIDTH; j++) {
             val += tile_A[threadIdx.y][j] * tile_B[j][threadIdx.x];

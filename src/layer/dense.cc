@@ -57,6 +57,7 @@ void Dense::forward(const Matrix& bottom) {
 // Sequential Version
 void Dense::forwardVersion_1(const Matrix& bottom){
   // z = w' * x + b
+
   const int n_sample = bottom.cols();
   top.resize(dim_out, n_sample);
 
@@ -67,20 +68,20 @@ void Dense::forwardVersion_1(const Matrix& bottom){
   top.colwise() += bias;
 }
 
-// Parallel Version (Not optimized)
+// Parallel Version (Unoptimized)
 void Dense::forwardVersion_2(const Matrix& bottom){
   const int n_sample = bottom.cols(); // Số lượng mẫu
-  top.resize(dim_out, n_sample);      // Kết quả đầu ra: kích thước (dim_out x n_sample)
+  top.resize(dim_out, n_sample);    
 
   // 1. Chuẩn bị dữ liệu trên CPU và GPU
-  float* h_bottom = (float*)malloc(dim_in * n_sample * sizeof(float)); // Dữ liệu đầu vào (bottom)
-  float* h_result = (float*)calloc(dim_out * n_sample, sizeof(float));      // Ma trận kết quả
+  float* h_bottom = (float*)malloc(dim_in * n_sample * sizeof(float));  // Dữ liệu đầu vào (bottom)
+  float* h_result = (float*)calloc(dim_out * n_sample, sizeof(float));  // Ma trận kết quả
 
   for (int i = 0; i < n_sample; i++) {
     // Trích xuất cột của bottom
     float* columnData = const_cast<float*>(bottom.col(i).data());
 
-    // Chuyển đổi cột bottom sang hàng (transpose nếu cần)
+    // Chuyển đổi cột bottom sang hàng
     Matrix columnMatrix = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(columnData, dim_in, 1);
     std::memcpy(h_bottom + i * dim_in, columnMatrix.data(), dim_in * sizeof(float));
 
@@ -101,10 +102,10 @@ void Dense::forwardVersion_2(const Matrix& bottom){
   free(h_result);
 }
 
-// Parallel Version (optimized)
+// Parallel Version (Optimized)
 void Dense::forwardVersion_3(const Matrix& bottom){
   const int n_sample = bottom.cols(); // Số lượng mẫu
-  top.resize(dim_out, n_sample);      // Kết quả đầu ra: kích thước (dim_out x n_sample)
+  top.resize(dim_out, n_sample); 
 
   // 1. Chuẩn bị dữ liệu trên CPU và GPU
   float* h_bottom = (float*)malloc(dim_in * n_sample * sizeof(float)); // Dữ liệu đầu vào (bottom)
@@ -114,7 +115,7 @@ void Dense::forwardVersion_3(const Matrix& bottom){
     // Trích xuất cột của bottom
     float* columnData = const_cast<float*>(bottom.col(i).data());
 
-    // Chuyển đổi cột bottom sang hàng (transpose nếu cần)
+    // Chuyển đổi cột bottom sang hàng
     Matrix columnMatrix = Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>>(columnData, dim_in, 1);
     std::memcpy(h_bottom + i * dim_in, columnMatrix.data(), dim_in * sizeof(float));
 
@@ -159,7 +160,7 @@ void Dense::backward(const Matrix& bottom, const Matrix& grad_top) {
 void Dense::backwardVersion_1(const Matrix& bottom, const Matrix& grad_top) {
   const int n_sample = bottom.cols();
 
-  // Tính grad_weight = bottom * grad_top.transpose() sử dụng HostMatrixMultiplication
+  // Tính grad_weight = bottom * grad_top.transpose()
   grad_weight = bottom * grad_top.transpose();
 
   // Tính grad_bias = \sum{ d(L)/d(z_i) }
