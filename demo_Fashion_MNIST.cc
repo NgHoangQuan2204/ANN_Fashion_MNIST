@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
   // train & test
   SGD opt(0.0001, 5e-4, 0.9, true);
   // SGD opt(0.001);
-  const int n_epoch = 2;
+  const int n_epoch = 3;
   const int batch_size = 100;
 
   Matrix previous_weight = ann.get_weight_from_network();
