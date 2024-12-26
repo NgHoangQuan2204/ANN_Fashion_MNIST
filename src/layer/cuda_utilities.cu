@@ -177,7 +177,7 @@ __global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, 
             // Unroll vòng lặp tính toán nhân A và B
             #pragma unroll
             for (int u = 0; u < UNROLL_FACTOR; ++u) {
-                val += tile_A[threadIdx.y][j] * tile_B[j][threadIdx.x] + u * (TILE_WIDTH / UNROLL_FACTOR);
+                val += tile_A[threadIdx.y][i] * tile_B[i][threadIdx.x] + u * (TILE_WIDTH / UNROLL_FACTOR);
             }
         }
 
