@@ -152,7 +152,6 @@ __global__ void matrixMultiplicationKernel_3(float* restrict A, float* restrict 
     int col = threadIdx.x + blockIdx.x * TILE_WIDTH;
     float val = 0.0f;
 
-
     // Duyệt qua các "tiled blocks" để thực hiện phép nhân ma trận
     for (int i = 0; i < (n + TILE_WIDTH - 1) / TILE_WIDTH; i++)
     {
