@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
     std::cout << "Average accuracy: " << avg_acc/n_epoch << std::endl;
-    std::cout << "Train time: " << duration.count() << " ms" << std::endl;
+    std::cout << "Train time: " << duration.count() << " s" << std::endl;
     ann.print_average_times();
   }
   
