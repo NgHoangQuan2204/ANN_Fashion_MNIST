@@ -35,9 +35,7 @@ namespace config
 }
 
 float testing(Network& ann, MNIST& dataset, int epoch) {
-  startTimer();    
   ann.forward(dataset.test_data);
-  std::cout << "Test time: " << stopTimer() << std::endl;
    
   float acc = compute_accuracy(ann.output(), dataset.test_labels);
   std::cout << "Test acc: " << acc << std::endl;
@@ -90,7 +88,6 @@ int main(int argc, char** argv) {
     config::currentVersion = v;
     std::cout << "\nCurrent version: " << config::currentVersion << "\n\n";
     float avg_acc = 0.0f;
-    startTimer();
     auto start = std::chrono::high_resolution_clock::now();
     for (int epoch = 0; epoch < n_epoch; epoch ++) 
     {
@@ -126,8 +123,7 @@ int main(int argc, char** argv) {
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
     std::cout << "Average accuracy: " << avg_acc/n_epoch << std::endl;
-    std::cout << "Train time: " << stopTimer() << std::endl;
-    std::cout << "Real train time: " << duration.count() << " ms" << std::endl;
+    std::cout << "Train time: " << duration.count() << " ms" << std::endl;
     ann.print_average_times();
   }
   
