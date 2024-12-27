@@ -15,6 +15,7 @@ static std::default_random_engine generator;
 // Normal distribution: N(mu, sigma^2)
 inline void set_normal_random(float* arr, int n, float mu, float sigma) {
   std::normal_distribution<float> distribution(mu, sigma);
+  generator.seed(4444);
   for (int i = 0; i < n; i ++) {
     arr[i] = distribution(generator);
   }
