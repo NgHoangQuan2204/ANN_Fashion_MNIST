@@ -198,7 +198,6 @@ __global__ void matrixMultiplicationKernel_4(float* A, float* B, float* result, 
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    // Kiểm tra điều kiện biên để tránh truy cập ngoài phạm vi
     if (row < m && col < k) {
         half value = __float2half(0.0f);  // Khởi tạo giá trị FP16
         

@@ -90,7 +90,6 @@ int main(int argc, char** argv) {
     auto start = std::chrono::high_resolution_clock::now();
     for (int epoch = 0; epoch < n_epoch; epoch ++) 
     {
-      shuffle_data(dataset.train_data, dataset.train_labels);
       for (int start_idx = 0; start_idx < n_train; start_idx += batch_size) 
       {
         int ith_batch = start_idx / batch_size;
