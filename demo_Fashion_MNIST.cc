@@ -94,6 +94,7 @@ int main(int argc, char** argv) {
                                       std::min(batch_size, n_train - start_idx));
         Matrix label_batch = dataset.train_labels.block(0, start_idx, 1,
                                       std::min(batch_size, n_train - start_idx));
+        
         Matrix target_batch = one_hot_encode(label_batch, 10);
         
         ann.forward(x_batch);
