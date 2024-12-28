@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
   SGD opt(0.0001, 5e-4, 0.9, true);
   // SGD opt(0.001);
   const int n_epoch = 3;
-  const int batch_size = 300;
+  const int batch_size = 100;
 
   Matrix previous_weight = ann.get_weight_from_network();
 
@@ -95,10 +95,6 @@ int main(int argc, char** argv) {
         Matrix label_batch = dataset.train_labels.block(0, start_idx, 1,
                                       std::min(batch_size, n_train - start_idx));
         Matrix target_batch = one_hot_encode(label_batch, 10);
-        if (false && ith_batch % 10 == 1) {
-          std::cout << ith_batch << "-th grad: " << std::endl;
-          ann.check_gradient(x_batch, target_batch, 10);
-        }
         
         ann.forward(x_batch);
 
@@ -112,6 +108,7 @@ int main(int argc, char** argv) {
         // optimize
         ann.update(opt);
       }
+
     // test
     avg_acc += testing(ann, dataset, epoch);
     }
