@@ -16,9 +16,9 @@ void Network::forward(const Matrix& input) {
     auto start = std::chrono::high_resolution_clock::now();
 
     layers[i]->forward(layers[i-1]->output());
-    
+
     auto stop = std::chrono::high_resolution_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    std::chrono::duration<float> elapsed = stop - start;
     forward_times[i] += elapsed.count();
   }
 }
@@ -38,7 +38,7 @@ void Network::backward(const Matrix& input, const Matrix& target) {
     layers[0]->backward(input, loss->back_gradient());
 
     auto stop = std::chrono::high_resolution_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    std::chrono::duration<float> elapsed = stop - start;
     backward_times[0] += elapsed.count();
     return;
   }
@@ -49,7 +49,7 @@ void Network::backward(const Matrix& input, const Matrix& target) {
     layers[i]->backward(layers[i-1]->output(), layers[i+1]->back_gradient());
 
     auto stop = std::chrono::high_resolution_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    std::chrono::duration<float> elapsed = stop - start;
     backward_times[i] += elapsed.count();
   }
   layers[0]->backward(input, layers[1]->back_gradient());
@@ -151,11 +151,11 @@ Matrix Network::get_weight_from_network(){
 void Network::print_average_times() const {
     std::cout << "Total forward times:" << std::endl;
     for (int i = 0; i < forward_times.size(); i++) {
-        std::cout << "Layer " << i+1 << ": " << (forward_times[i]) << " ms" << std::endl;
+        std::cout << "Layer " << i+1 << ": " << (forward_times[i]) << " s" << std::endl;
     }
 
     std::cout << "Total backward times:" << std::endl;
     for (int i = 0; i < backward_times.size(); i++) {
-        std::cout << "Layer " << i+1 << ": " << (backward_times[i]) << " ms" << std::endl;
+        std::cout << "Layer " << i+1 << ": " << (backward_times[i]) << " s" << std::endl;
     }
 }
