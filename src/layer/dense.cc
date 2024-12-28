@@ -7,8 +7,8 @@ void Dense::init() {
   bias.resize(dim_out);
   grad_weight.resize(dim_in, dim_out);
   grad_bias.resize(dim_out);
-  set_normal_random(weight.data(), weight.size(), 0, 0.001);
-  set_normal_random(bias.data(), bias.size(), 0, 0.001);
+  set_normal_random(weight.data(), weight.size(), 0, 0.008);
+  set_normal_random(bias.data(), bias.size(), 0, 0.008);
 }
 
 Matrix HostMatrixMultiplication(const Matrix& A, const Matrix& B) 
