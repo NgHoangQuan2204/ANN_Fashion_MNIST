@@ -52,7 +52,7 @@ class Network {
                       int seed = -1);
   Matrix get_weight_from_network();
 
-  void print_average_times() const;
+  void print_total_times() const;
 };
 
 #endif  // SRC_NETWORK_H_

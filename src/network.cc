@@ -148,7 +148,7 @@ Matrix Network::get_weight_from_network(){
     throw std::runtime_error("No Dense layer found in the network.");
 }
 
-void Network::print_average_times() const {
+void Network::print_total_times() const {
     std::cout << "Total forward times:" << std::endl;
     for (int i = 0; i < forward_times.size(); i++) {
         std::cout << "Layer " << i+1 << ": " << (forward_times[i]) << " s" << std::endl;
