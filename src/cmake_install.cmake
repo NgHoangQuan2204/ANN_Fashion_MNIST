@@ -1,5 +1,3 @@
-# Install script for directory: /d/SourceCode/University/Parallel_Computing/CNN_Parallelization/Source/mini-dnn-cpp-master
-
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX "/usr/local")

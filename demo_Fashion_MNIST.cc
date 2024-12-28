@@ -26,7 +26,6 @@ namespace config
   int currentVersion = 1;
   int startVersion = 2;
   int endVersion = 2;
-  bool runAllVersion = false;
   float forwardTime = 0;
 }
 
@@ -42,7 +41,6 @@ float testing(Network& ann, MNIST& dataset, int epoch) {
 int main(int argc, char** argv) {
   config::startVersion = std::stoi(argv[1]);
   config::endVersion = std::stoi(argv[2]);
-  config::runAllVersion = std::stoi(argv[3]);
 
   // data
   MNIST dataset("../data/fashion-mnist/");
