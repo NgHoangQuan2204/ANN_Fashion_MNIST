@@ -77,8 +77,7 @@ __host__ __device__ int idx1D_col(int r, int c, int rowSz) // Create two verisio
     return c * rowSz + r;
 }
 
-__global__ void matrixMultiplicationKernel_1(float* A, float* B, float* result
-                                                        , int m, int n, int k, int image)
+__global__ void matrixMultiplicationKernel_1(float* A, float* B, float* result, int m, int n, int k)
 {
     // Xác định chỉ số hàng và cột trong ma trận kết quả
     int row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -98,7 +97,7 @@ __global__ void matrixMultiplicationKernel_1(float* A, float* B, float* result
     }
 }
 
-__global__ void matrixMultiplicationKernel_2(float* A, float* B, float* result, int m, int n, int k, int image)
+__global__ void matrixMultiplicationKernel_2(float* A, float* B, float* result, int m, int n, int k)
 {
     __shared__ float tile_A[TILE_WIDTH][TILE_WIDTH];
     __shared__ float tile_B[TILE_WIDTH][TILE_WIDTH];
@@ -213,7 +212,7 @@ __global__ void matrixMultiplicationKernel_4(float* A, float* B, float* result, 
     }
 }
 
-void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, int n, int k, int i, int version)
+void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, int n, int k, int version)
 {	
     // Kích thước block và grid
     dim3 blockSize(32, 32);
@@ -237,10 +236,10 @@ void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, in
     // Gọi kernel
     switch (version) {
         case 1: 
-            matrixMultiplicationKernel_1<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
+            matrixMultiplicationKernel_1<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k);
             break;
         case 2:
-            matrixMultiplicationKernel_2<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k, i);
+            matrixMultiplicationKernel_2<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k);
             break;
         case 3:
             matrixMultiplicationKernel_3<<<gridSize, blockSize>>>(d_A, d_B, d_result, m, n, k);
