@@ -17,73 +17,11 @@
 		}                                                          \
 	}
 
-struct GpuTimer
-{
-	cudaEvent_t start;
-	cudaEvent_t stop;
-
-	GpuTimer()
-	{
-		cudaEventCreate(&start);
-		cudaEventCreate(&stop);
-	}
-
-	~GpuTimer()
-	{
-		cudaEventDestroy(start);
-		cudaEventDestroy(stop);
-	}
-
-	void Start()
-	{
-		cudaEventRecord(start, 0);
-		cudaEventSynchronize(start);
-	}
-
-	void Stop()
-	{
-		cudaEventRecord(stop, 0);
-	}
-
-	float Elapsed()
-	{
-		float elapsed;
-		cudaEventSynchronize(stop);
-		cudaEventElapsedTime(&elapsed, start, stop);
-		return elapsed;
-	}
-};
-
-static GpuTimer timer;
-void startTimer()
-{
-    timer.Start();
-}
-
-float stopTimer()
-{
-    timer.Stop();
-
-	return timer.Elapsed();
-}
-
-__host__ __device__ int idx1D(int r, int c, int colSz) // Create two verision: __host__ to be callable from CPU and run on CPU, __device__ to be callable from GPU and run on GPU
-{
-    return r * colSz + c;
-}
-
-__host__ __device__ int idx1D_col(int r, int c, int rowSz) // Create two verision: __host__ to be callable from CPU and run on CPU, __device__ to be callable from GPU and run on GPU
-{
-    return c * rowSz + r;
-}
-
 __global__ void matrixMultiplicationKernel_1(float* A, float* B, float* result, int m, int n, int k)
 {
-    // Xác định chỉ số hàng và cột trong ma trận kết quả
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    // Kiểm tra điều kiện biên
     if (row < m && col < k) 
     {
         float val = 0.0f;
@@ -94,7 +32,6 @@ __global__ void matrixMultiplicationKernel_1(float* A, float* B, float* result, 
             val += A[row * n + i] * B[i * k + col];
         }
 
-        // Ghi kết quả vào ma trận C
         result[row * k + col] = val;
     }
 }
@@ -144,7 +81,6 @@ __global__ void matrixMultiplicationKernel_2(float* A, float* B, float* result, 
         __syncthreads();
     }
 
-    // Ghi giá trị tính được vào ma trận kết quả C
     if (row < m && col < k) {
         result[row * k + col] = val;
     }
@@ -152,7 +88,6 @@ __global__ void matrixMultiplicationKernel_2(float* A, float* B, float* result, 
 
 __global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, int m, int n, int k) 
 {
-    // Shared memory tiles cho ma trận A và B
     __shared__ float tile_A[TILE_WIDTH][TILE_WIDTH];
     __shared__ float tile_B[TILE_WIDTH][TILE_WIDTH];
 
@@ -196,7 +131,6 @@ __global__ void matrixMultiplicationKernel_3(float* A, float* B, float* result, 
         __syncthreads();
     }
 
-    // Ghi kết quả vào ma trận đầu ra
     if (row < m && col < k) {
         result[row * k + col] = val;
     }
@@ -209,43 +143,40 @@ __global__ void matrixMultiplicationKernel_4(float* A, float* B, float* result, 
 
     if (row < m && col < k) 
     {
-        half value = __float2half(0.0f);  // Khởi tạo giá trị FP16
+        half value = __float2half(0.0f);
         
-        // Tính tích vô hướng của hàng A và cột B (chuyển A, B thành FP16 và tính toán)
         for (int i = 0; i < n; i++) 
         {
-            half a = __float2half(A[row * n + i]);  // Chuyển từ float sang half
-            half b = __float2half(B[i * k + col]);  // Chuyển từ float sang half
-            value = __hadd(value, __hmul(a, b));  // Nhân và cộng FP16
+            // Chuyển từ float sang half
+            half a = __float2half(A[row * n + i]); 
+            half b = __float2half(B[i * k + col]);  
+
+            // Nhân và cộng FP16
+            value = __hadd(value, __hmul(a, b));  
         }
 
-        // Lưu kết quả vào ma trận kết quả (chuyển từ FP16 về float)
+        // Lưu kết quả (chuyển từ FP16 về float)
         result[row * k + col] = __half2float(value);
     }
 }
 
 void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, int n, int k, int version)
 {	
-    // Kích thước block và grid
     dim3 blockSize(32, 32);
     dim3 gridSize((k + blockSize.x - 1) / blockSize.x, (m + blockSize.y - 1) / blockSize.y);
 
-    // Kích thước bộ nhớ
     const int size_A = m * n * sizeof(float);
     const int size_B = n * k * sizeof(float);
     const int size_result = m * k * sizeof(float);
 
-    // Cấp phát bộ nhớ trên GPU
     float *d_A, *d_B, *d_result;
     CHECK(cudaMalloc(&d_A, size_A));
     CHECK(cudaMalloc(&d_B, size_B));
     CHECK(cudaMalloc(&d_result, size_result));
 
-    // Copy dữ liệu từ CPU sang GPU
     CHECK(cudaMemcpy(d_A, A, size_A, cudaMemcpyHostToDevice));
     CHECK(cudaMemcpy(d_B, B, size_B, cudaMemcpyHostToDevice));
 
-    // Gọi kernel
     switch (version) 
     {
         case 1: 
@@ -263,13 +194,10 @@ void matrixMultiplicationGPUWrapper(float* A, float *B, float *result, int m, in
     }
     CHECK(cudaGetLastError());
     
-    // Đồng bộ GPU để đảm bảo kernel hoàn thành
     CHECK(cudaDeviceSynchronize());
 
-    // Copy kết quả từ GPU sang CPU
     CHECK(cudaMemcpy(result, d_result, size_result, cudaMemcpyDeviceToHost));
 
-    // Giải phóng bộ nhớ GPU
     CHECK(cudaFree(d_A));
     CHECK(cudaFree(d_B));
     CHECK(cudaFree(d_result));
