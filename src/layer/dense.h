@@ -1,5 +1,5 @@
-#ifndef SRC_LAYER_FULLY_CONNECTED_H_
-#define SRC_LAYER_FULLY_CONNECTED_H_
+#ifndef SRC_DENSE_H_
+#define SRC_DENSE_H_
 
 #include <vector>
 #include "../layer.h"
@@ -35,4 +35,4 @@ class Dense : public Layer {
   const Matrix& get_weight() const {return weight;}
 };
 
-#endif
+#endif // SRC_DENSE_H_
