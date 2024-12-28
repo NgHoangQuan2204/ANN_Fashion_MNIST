@@ -1,2 +1,5 @@
 # Hướng dẫn setup
-- Tải thư viện Eigen v3.4.0: https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip
+- Upload file `build_and_run.ipynb` lên google colab
+- Chuyển runtime sang `T4 GPU` và `Run all`
+- Sử dụng lệnh `./demo [startVersion] [endVersion]` để chạy mô hình. 
+    - VD: `./demo 2 2` để chạy version 2.
