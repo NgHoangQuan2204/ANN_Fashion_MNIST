@@ -138,13 +138,13 @@ Matrix Network::get_weight_from_network(){
 }
 
 void Network::print_average_times() const {
-    std::cout << "Average forward times:" << std::endl;
+    std::cout << "Total forward times:" << std::endl;
     for (int i = 0; i < forward_times.size(); i++) {
-        std::cout << "Layer " << i+1 << ": " << (forward_times[i] / forward_count) << " ms" << std::endl;
+        std::cout << "Layer " << i+1 << ": " << (forward_times[i]) << " ms" << std::endl;
     }
 
-    std::cout << "Average backward times:" << std::endl;
+    std::cout << "Total backward times:" << std::endl;
     for (int i = 0; i < backward_times.size(); i++) {
-        std::cout << "Layer " << i+1 << ": " << (backward_times[i] / backward_count) << " ms" << std::endl;
+        std::cout << "Layer " << i+1 << ": " << (backward_times[i]) << " ms" << std::endl;
     }
 }
