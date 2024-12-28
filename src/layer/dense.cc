@@ -170,11 +170,7 @@ void Dense::backwardVersion_Device(const Matrix& bottom, const Matrix& grad_top,
     grad_weight = bottom * grad_top.transpose();
 
     // Tính grad_bias = \sum(d(L)/d(z))
-    grad_bias.resize(dim_out, 1);
-    for (int i = 0; i < dim_out; ++i) 
-    {
-        grad_bias(i, 0) = grad_top.row(i).sum();
-    }
+    grad_bias = grad_top.rowwise().sum();
 
     // Tính grad_bottom = weight * grad_top
     for (int i = 0; i < n_sample; i++) 

@@ -34,7 +34,7 @@ float testing(Network& ann, MNIST& dataset, int epoch) {
   ann.forward(dataset.test_data);
    
   float acc = compute_accuracy(ann.output(), dataset.test_labels);
-  std::cout << "Test acc: " << acc << std::endl;
+  std::cout << "Accuracy on test set: " << acc << std::endl;
   std::cout << std::endl;
   return acc;
 }
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 
         // display
         if (ith_batch % 100 == 0) {
-          std::cout << ith_batch << "-th batch, validation loss: " << ann.get_loss() << std::endl;
+          std::cout << ith_batch << "-th batch, train loss: " << ann.get_loss() << std::endl;
         }
         
         // optimize
