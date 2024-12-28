@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 
         // display
         if (ith_batch % 100 == 0) {
-          std::cout << ith_batch << "-th batch, loss: " << ann.get_loss() << std::endl;
+          std::cout << ith_batch << "-th batch, validation loss: " << ann.get_loss() << std::endl;
         }
         
         // optimize

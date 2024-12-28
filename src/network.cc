@@ -1,3 +1,5 @@
+#include <chrono>
+
 #include "./network.h"
 #include "./layer/dense.h"
 #include "./layer/cuda_utilities.h"
@@ -11,10 +13,13 @@ void Network::forward(const Matrix& input) {
   }
   forward_count++;
   for (int i = 1; i < layers.size(); i++) {
-    startTimer();
+    auto start = std::chrono::high_resolution_clock::now();
+
     layers[i]->forward(layers[i-1]->output());
-    float elapsed = stopTimer();
-    forward_times[i] += elapsed;
+    
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    forward_times[i] += elapsed.count();
   }
 }
 
@@ -28,18 +33,24 @@ void Network::backward(const Matrix& input, const Matrix& target) {
   }
   backward_count++;
   if (n_layer == 1) {
-    startTimer();
+    auto start = std::chrono::high_resolution_clock::now();
+
     layers[0]->backward(input, loss->back_gradient());
-    float elapsed = stopTimer();
-    backward_times[0] += elapsed;
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    backward_times[0] += elapsed.count();
     return;
   }
   layers[n_layer-1]->backward(layers[n_layer-2]->output(), loss->back_gradient());
   for (int i = n_layer-2; i > 0; i--) {
-    startTimer();
+    auto start = std::chrono::high_resolution_clock::now();
+
     layers[i]->backward(layers[i-1]->output(), layers[i+1]->back_gradient());
-    float elapsed = stopTimer();
-    backward_times[i] += elapsed;
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    backward_times[i] += elapsed.count();
   }
   layers[0]->backward(input, layers[1]->back_gradient());
 }
