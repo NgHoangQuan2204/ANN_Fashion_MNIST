@@ -22,17 +22,11 @@ class Dense : public Layer {
   { init(); }
 
   void forward(const Matrix& bottom);
-  void forwardVersion_1(const Matrix& bottom); // Sequential
-  void forwardVersion_2(const Matrix& bottom); // Parallel (Not optimized)
-  void forwardVersion_3(const Matrix& bottom); // Parallel (Optimized)
-  void forwardVersion_4(const Matrix& bottom);
-  void forwardVersion_5(const Matrix& bottom);
+  void forwardVersion_Host(const Matrix& bottom); // Sequential
+  void forwardVersion_Device(const Matrix& bottom, int version); // Parallel
   void backward(const Matrix& bottom, const Matrix& grad_top);
-  void backwardVersion_1(const Matrix& bottom, const Matrix& grad_top); // Sequential
-  void backwardVersion_2(const Matrix& bottom, const Matrix& grad_top); // Parallel (Not optimized)
-  void backwardVersion_3(const Matrix& bottom, const Matrix& grad_top); // Parallel (Optimized)
-  void backwardVersion_4(const Matrix& bottom, const Matrix& grad_top);
-  void backwardVersion_5(const Matrix& bottom, const Matrix& grad_top);
+  void backwardVersion_Host(const Matrix& bottom, const Matrix& grad_top); // Sequential
+  void backwardVersion_Device(const Matrix& bottom, const Matrix& grad_top, int version); // Parallel
   void update(Optimizer& opt);
   int output_dim() { return dim_out; }
   std::vector<float> get_parameters() const;
@@ -41,4 +35,4 @@ class Dense : public Layer {
   const Matrix& get_weight() const {return weight;}
 };
 
-#endif  // SRC_LAYER_FULLY_CONNECTED_H_
+#endif
