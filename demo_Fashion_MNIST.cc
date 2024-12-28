@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
     auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
     std::cout << "Final accuracy: " << avg_acc << std::endl;
     std::cout << "Train time: " << duration.count() << " s" << std::endl;
-    ann.print_average_times();
+    ann.print_total_times();
   }
   
   return 0;
